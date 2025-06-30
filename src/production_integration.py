@@ -9,7 +9,7 @@ Shows how to integrate Bayesian RAG Bandits into production systems:
 - Performance monitoring
 """
 
-from bayesian_rag_system import BayesianRAGBandits, BM25Retriever, DenseRetriever, HybridRetriever
+from src import BayesianRAGBandits, BM25Retriever, DenseRetriever, HybridRetriever
 from typing import List, Dict, Any, Optional
 import json
 import asyncio
