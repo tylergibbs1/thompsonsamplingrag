@@ -205,19 +205,23 @@ graph TD
     M --> C
     N --> C
     
-    %% Styling
-    classDef queryStyle fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef samplingStyle fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef retrievalStyle fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
-    classDef llmStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef feedbackStyle fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    classDef learningStyle fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    %% Modern Styling
+    classDef primary fill:#000,stroke:#fff,stroke-width:2px,color:#fff
+    classDef secondary fill:#1a1a1a,stroke:#333,stroke-width:2px,color:#fff
+    classDef accent fill:#0070f3,stroke:#0070f3,stroke-width:2px,color:#fff
+    classDef success fill:#00d924,stroke:#00d924,stroke-width:2px,color:#000
+    classDef warning fill:#ff6b35,stroke:#ff6b35,stroke-width:2px,color:#fff
+    classDef neutral fill:#f4f4f4,stroke:#e1e1e1,stroke-width:2px,color:#000
+    classDef glass fill:#ffffff20,stroke:#ffffff40,stroke-width:1px,color:#fff,stroke-dasharray: 5 5
     
-    class A queryStyle
-    class B,I samplingStyle
-    class C,J,K,L,M,N retrievalStyle
-    class D,E llmStyle
-    class F,G,H feedbackStyle
+    %% Apply styles
+    class A primary
+    class B,I accent
+    class C,J,K,L,M,N secondary
+    class D,E warning
+    class F glass
+    class G success
+    class H neutral
 ```
 
 ### Components
@@ -384,10 +388,17 @@ graph LR
     B --> C[Late Queries<br/>Exploitation Focus]
     C --> D[Optimal Selection<br/>Best Retriever]
     
-    style A fill:#e3f2fd
-    style B fill:#f3e5f5  
-    style C fill:#e8f5e8
-    style D fill:#fff3e0
+    %% Modern Styling
+    classDef primary fill:#000,stroke:#fff,stroke-width:2px,color:#fff
+    classDef secondary fill:#1a1a1a,stroke:#333,stroke-width:2px,color:#fff
+    classDef accent fill:#0070f3,stroke:#0070f3,stroke-width:2px,color:#fff
+    classDef success fill:#00d924,stroke:#00d924,stroke-width:2px,color:#000
+    
+    %% Apply styles
+    class A primary
+    class B secondary
+    class C accent
+    class D success
 ```
 
 ### 📊 Visual Validation Results
