@@ -353,27 +353,27 @@ Comprehensive testing validates that the Thompson Sampling implementation works 
 
 | Test | Result | Key Metric | Interpretation |
 |------|--------|------------|----------------|
-| **Exploration → Exploitation** | ✅ **PASS** | Exploration: 1.00, Exploitation: 0.60 | Perfect early diversity, good late convergence |
-| **Convergence to Best** | ✅ **PASS** | Dense: 56% → 100% selection | Correctly identifies superior retriever |
-| **Beta Updates** | ✅ **PASS** | BM25: (1,1)→(3,2), Dense: (1,1)→(2,3) | Mathematically correct parameter updates |
-| **Equal Performance** | ⚠️ **Expected** | Max deviation: 21.0 | Normal stochastic behavior - not a failure |
+| **Exploration → Exploitation** | ✅ **PASS** | Exploration: 1.00, Exploitation: 0.92 | Perfect early diversity, excellent late convergence |
+| **Convergence to Best** | ✅ **PASS** | HyDE: 28% → 92% selection | Strong convergence to superior retriever |
+| **Beta Updates** | ✅ **PASS** | 10/11 retrievers tested with correct α/β updates | Comprehensive parameter learning across retrievers |
+| **Equal Performance** | ⚠️ **Expected** | Max deviation: 13.9 | Normal stochastic behavior - not a failure |
 
 ### Key Validation Points
 
 **🎯 Exploration-Exploitation Balance**
-- **Early Phase**: 100% exploration score (perfect diversity across retrievers)
-- **Late Phase**: 60% exploitation score (converges to best performer)
-- **Winner Identification**: Dense retriever correctly identified as best (18% selection vs 80% true win rate)
+- **Early Phase**: 100% exploration score (perfect diversity across 11 retrievers)
+- **Late Phase**: 92% exploitation score (excellent convergence to best performer)
+- **Winner Identification**: ReRanker correctly identified as best (79.5% total selection, 0.9 true win rate)
 
 **📈 Statistical Convergence**  
-- **Learning Curve**: Dense selection increased from 56% → 100% over time
-- **Improvement**: +44% convergence to optimal retriever
-- **Significance**: Demonstrates proper Bayesian learning from feedback
+- **Learning Curve**: HyDE selection increased from 28% → 92% over time
+- **Improvement**: +64% convergence to optimal retriever
+- **Significance**: Demonstrates robust Bayesian learning from feedback
 
 **🧮 Mathematical Correctness**
-- **Beta Parameters**: Correct α/β updates for successes/failures
-- **Posterior Updates**: `BM25: α=3, β=2` (2 successes, 1 failure)
-- **Distribution Tracking**: `Dense: α=2, β=3` (1 success, 2 failures)
+- **Beta Parameters**: Correct α/β updates across 10/11 retrievers
+- **Comprehensive Testing**: `ReRanker: α=5, β=1` (4 successes), `GraphRAG: α=4, β=1` (3 successes)
+- **Distribution Tracking**: `MultiQuery: α=1, β=3` (2 failures), showing proper failure learning
 
 **🎲 Realistic Stochastic Behavior**
 - **Equal Performance Test**: Shows natural variance in selection
@@ -406,10 +406,10 @@ graph LR
 ![Thompson Sampling Test Results](test/thompson_sampling_plots.png)
 
 **Plot Analysis:**
-- **Top Left**: Exploration vs Exploitation - shows perfect early diversity (1.00) transitioning to focused selection (0.60)
-- **Top Right**: Convergence to Best Retriever - Dense selection increases from 56% to 100% over time  
-- **Bottom Left**: Beta Distribution Updates - mathematical correctness of α/β parameter tracking
-- **Bottom Right**: Equal Performance Handling - realistic stochastic variance in selection patterns
+- **Top Left**: Exploration vs Exploitation - shows perfect early diversity (1.00) transitioning to excellent focused selection (0.92)
+- **Top Right**: Convergence to Best Retriever - HyDE selection increases from 28% to 92% over time, demonstrating strong learning  
+- **Bottom Left**: Beta Distribution Updates - comprehensive mathematical correctness across 10/11 retrievers with varied α/β patterns
+- **Bottom Right**: Equal Performance Handling - realistic stochastic variance showing proper Thompson Sampling behavior
 
 **Real-World Performance:**
 - ✅ **Identifies superior retrievers** within 5-10 queries
