@@ -390,6 +390,16 @@ graph LR
     style D fill:#fff3e0
 ```
 
+### 📊 Visual Validation Results
+
+![Thompson Sampling Test Results](test/thompson_sampling_plots.png)
+
+**Plot Analysis:**
+- **Top Left**: Exploration vs Exploitation - shows perfect early diversity (1.00) transitioning to focused selection (0.60)
+- **Top Right**: Convergence to Best Retriever - Dense selection increases from 56% to 100% over time  
+- **Bottom Left**: Beta Distribution Updates - mathematical correctness of α/β parameter tracking
+- **Bottom Right**: Equal Performance Handling - realistic stochastic variance in selection patterns
+
 **Real-World Performance:**
 - ✅ **Identifies superior retrievers** within 5-10 queries
 - ✅ **Balances exploration/exploitation** optimally  
