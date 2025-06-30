@@ -1,0 +1,11 @@
+{
+  "retrievers": [
+    "BM25",
+    "Dense",
+    "Hybrid"
+  ],
+  "prior_alpha": 1.0,
+  "prior_beta": 1.0,
+  "top_k_default": 5,
+  "state_file": "production_rag_state.json"
+}
