@@ -457,7 +457,6 @@ black *.py
 ## 📚 References
 
 - [Thompson Sampling for Contextual Bandits](https://arxiv.org/abs/1209.3352)
-- [Multi-Armed Bandits in Production](https://netflixtechblog.com/contextual-bandits-for-real-time-recommendation-a-production-ready-solution-2e70fdfdb8c3)
 - [RAG Systems Overview](https://arxiv.org/abs/2005.11401)
 
 ## 📄 License
