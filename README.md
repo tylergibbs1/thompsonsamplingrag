@@ -115,7 +115,7 @@ $$P(\theta_i | \text{data}) = \text{Beta}(\alpha_i, \beta_i)$$
 
 **Selection Probability:**
 
-$$\text{Select retriever } i = \arg\max_j \tilde{\theta}_j$$
+$$\text{Select retriever } i = \underset{j}{\arg\max} \tilde{\theta}_j$$
 where $\tilde{\theta}_j \sim \text{Beta}(\alpha_j, \beta_j)$
 
 **Bayesian Updates:**
@@ -128,7 +128,9 @@ $$E[\theta_i] = \frac{\alpha_i}{\alpha_i + \beta_i}$$
 
 **95% Confidence Interval:**
 
-$$\text{CI}_{95\%} = \text{Beta}^{-1}(0.025, \alpha_i, \beta_i), \text{Beta}^{-1}(0.975, \alpha_i, \beta_i)$$
+$$\text{CI}_{95\%} = [Q(0.025), Q(0.975)]$$
+
+where $Q$ is the Beta quantile function with parameters $\alpha_i, \beta_i$
 
 ## 📊 Advanced Features
 
@@ -138,7 +140,7 @@ $$\text{CI}_{95\%} = \text{Beta}^{-1}(0.025, \alpha_i, \beta_i), \text{Beta}^{-1
 - **BM25**: Fast lexical matching with TF-IDF scoring
 - **Dense**: OpenAI text-embedding-3-large for semantic similarity using cosine similarity:
 
-$$\text{sim}(q, d) = \frac{\mathbf{e}_q \cdot \mathbf{e}_d}{||\mathbf{e}_q|| \cdot ||\mathbf{e}_d||}$$
+$$\text{sim}(q, d) = \frac{\mathbf{e}_q \cdot \mathbf{e}_d}{\|\mathbf{e}_q\| \|\mathbf{e}_d\|}$$
 - **GraphRAG**: PageRank + relevance scoring using networkx
 
 **Advanced Retrievers:**
