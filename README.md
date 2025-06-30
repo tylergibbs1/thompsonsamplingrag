@@ -1,6 +1,6 @@
 # Bayesian RAG Bandits: Thompson Sampling for Retriever Selection
 
-A production-ready system that uses Thompson Sampling (Bayesian bandits) to intelligently select between multiple RAG retrievers based on user feedback. This system adapts in real-time without requiring model retraining.
+A production-ready system that uses Thompson Sampling (Bayesian bandits) to intelligently select between multiple RAG retrievers based on user or llm feedback. This system adapts in real-time without requiring model retraining.
 
 
 
