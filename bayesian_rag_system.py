@@ -9,19 +9,38 @@ Features:
 - Online learning from user feedback
 - Sparse feedback handling
 - Production state persistence
+- LLM-powered automatic relevance evaluation
+- OpenAI embeddings and query expansion
 """
 
 import numpy as np
 import json
-from typing import Dict, List, Tuple, Optional, Any, Union
-from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
+from typing import Dict, List, Tuple, Optional
+from datetime import datetime
+from dataclasses import dataclass
 from abc import ABC, abstractmethod
 import logging
+import openai
+import os
+from pydantic import BaseModel
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# PYDANTIC MODELS
+# ============================================================================
+
+class QueryVariations(BaseModel):
+    """Structured output for query variations"""
+    variations: List[str]
+
+class RelevanceEvaluation(BaseModel):
+    """Structured output for relevance evaluation"""
+    is_relevant: bool
+    confidence: float  # 0.0 to 1.0
+    reasoning: str
 
 # ============================================================================
 # CORE CLASSES
@@ -119,31 +138,39 @@ class BM25Retriever(BaseRetriever):
         return QueryResult(top_docs, top_scores, self.name, query, datetime.now())
 
 class DenseRetriever(BaseRetriever):
-    """Dense semantic retriever using embeddings"""
+    """Dense semantic retriever using OpenAI embeddings"""
     
     def __init__(self, name: str = "Dense"):
         super().__init__(name)
         self.embeddings = None
-        self.encoder = None
+        self.openai_client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        self.embedding_model = "text-embedding-3-large"
+        
+    def _get_embeddings(self, texts: List[str]) -> np.ndarray:
+        """Get embeddings from OpenAI API"""
+        try:
+            response = self.openai_client.embeddings.create(
+                input=texts,
+                model=self.embedding_model
+            )
+            embeddings = [data.embedding for data in response.data]
+            return np.array(embeddings)
+        except Exception as e:
+            logger.warning(f"OpenAI embeddings failed: {e}, using random embeddings")
+            # Dimension based on model
+            dim = 3072 if "large" in self.embedding_model else 1536
+            return np.random.randn(len(texts), dim)
         
     def add_documents(self, documents: List[str], metadata: Optional[List[Dict]] = None):
         self.documents.extend(documents)
-        try:
-            from sentence_transformers import SentenceTransformer
-            self.encoder = SentenceTransformer('all-MiniLM-L6-v2')
-            self.embeddings = self.encoder.encode(self.documents)
-        except ImportError:
-            logger.warning("sentence-transformers not available, using random embeddings")
-            self.embeddings = np.random.randn(len(self.documents), 384)
+        self.embeddings = self._get_embeddings(self.documents)
     
     def retrieve(self, query: str, top_k: int = 5) -> QueryResult:
         if not self.documents or self.embeddings is None:
             return QueryResult([], [], self.name, query, datetime.now())
         
-        if self.encoder:
-            query_embedding = self.encoder.encode([query])[0]
-        else:
-            query_embedding = np.random.randn(384)
+        # Get query embedding
+        query_embedding = self._get_embeddings([query])[0]
         
         # Cosine similarity
         similarities = np.dot(self.embeddings, query_embedding) / (
@@ -309,38 +336,70 @@ class EnsembleRetriever(BaseRetriever):
         return QueryResult(top_docs, top_scores, self.name, query, datetime.now())
 
 class MultiQueryRetriever(BaseRetriever):
-    """Generates multiple query variations for improved recall"""
+    """Generates multiple query variations for improved recall using OpenAI"""
     
     def __init__(self, name: str = "MultiQuery", base_retriever: Optional[BaseRetriever] = None):
         super().__init__(name)
         self.base_retriever = base_retriever or DenseRetriever("Dense_Base")
+        self.openai_client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
         
     def add_documents(self, documents: List[str], metadata: Optional[List[Dict]] = None):
         self.documents.extend(documents)
         self.base_retriever.add_documents(documents, metadata)
     
     def _generate_query_variations(self, query: str) -> List[str]:
-        """Generate query variations"""
+        """Generate query variations using OpenAI structured outputs"""
         variations = [query]
         
-        # Simple expansion
-        synonyms = {
-            'machine learning': ['ML', 'AI'],
-            'neural network': ['neural net', 'deep learning'],
-            'algorithm': ['method', 'technique'],
-        }
+        try:
+            prompt = f"""Generate 3 different variations of this search query to improve information retrieval:
+
+Original query: "{query}"
+
+Generate variations that:
+1. Use different wording but same meaning
+2. Use synonyms or related terms  
+3. Rephrase as questions or statements differently
+
+Each variation should be distinct and useful for finding relevant information."""
+
+            response = self.openai_client.chat.completions.parse(
+                model="gpt-4.1",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that generates query variations for information retrieval."},
+                    {"role": "user", "content": prompt}
+                ],
+                response_format=QueryVariations,
+                max_tokens=5000,
+                temperature=0.7
+            )
+            
+            if response.choices and response.choices[0].message.parsed:
+                query_variations = response.choices[0].message.parsed
+                for var in query_variations.variations:
+                    if var and var.strip() not in variations:
+                        variations.append(var.strip())
+            
+        except Exception as e:
+            logger.warning(f"OpenAI query generation failed: {e}, falling back to simple expansion")
+            # Fallback to simple expansion
+            synonyms = {
+                'machine learning': ['ML', 'AI'],
+                'neural network': ['neural net', 'deep learning'],
+                'algorithm': ['method', 'technique'],
+            }
+            
+            for original, syns in synonyms.items():
+                if original in query.lower():
+                    for syn in syns[:1]:
+                        variations.append(query.lower().replace(original, syn))
+            
+            # Question reformulation
+            if query.lower().startswith('what is'):
+                topic = query[7:].strip()
+                variations.append(f"{topic} definition")
         
-        for original, syns in synonyms.items():
-            if original in query.lower():
-                for syn in syns[:1]:
-                    variations.append(query.lower().replace(original, syn))
-        
-        # Question reformulation
-        if query.lower().startswith('what is'):
-            topic = query[7:].strip()
-            variations.append(f"{topic} definition")
-        
-        return list(dict.fromkeys(variations))[:3]  # Remove duplicates, limit to 3
+        return list(dict.fromkeys(variations))[:4]  # Remove duplicates, limit to 4
     
     def retrieve(self, query: str, top_k: int = 5) -> QueryResult:
         if not self.documents:
@@ -380,6 +439,7 @@ class BayesianRAGBandits:
         self.bandit_params = {name: BetaParams(prior_alpha, prior_beta) for name in self.retrievers.keys()}
         self.query_history = []
         self.feedback_history = []
+        self.openai_client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
         
     def add_documents(self, documents: List[str], metadata: Optional[List[Dict]] = None):
         """Add documents to all retrievers"""
@@ -392,7 +452,48 @@ class BayesianRAGBandits:
         samples = {name: params.sample() for name, params in self.bandit_params.items()}
         return max(samples, key=samples.get)
     
-    def query(self, query: str, top_k: int = 5) -> Tuple[QueryResult, str]:
+    def _llm_evaluate_relevance(self, query: str, documents: List[str]) -> RelevanceEvaluation:
+        """Use LLM to evaluate if retrieved documents are relevant to the query"""
+        try:
+            # Format documents for evaluation
+            docs_text = "\n".join([f"Document {i+1}: {doc}" for i, doc in enumerate(documents[:3])])  # Limit to top 3
+            
+            prompt = f"""Evaluate if the retrieved documents are relevant to the search query.
+
+Query: "{query}"
+
+Retrieved Documents:
+{docs_text}
+
+Consider:
+- Do the documents contain information that directly answers or relates to the query?
+- Are the documents semantically relevant to what the user is looking for?
+- Would these documents be helpful for someone asking this query?
+
+Provide your assessment with confidence level (0.0 to 1.0) and reasoning."""
+
+            response = self.openai_client.chat.completions.parse(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "You are an expert at evaluating document relevance for information retrieval systems."},
+                    {"role": "user", "content": prompt}
+                ],
+                response_format=RelevanceEvaluation,
+                max_tokens=300,
+                temperature=0.3
+            )
+            
+            if response.choices and response.choices[0].message.parsed:
+                return response.choices[0].message.parsed
+            else:
+                # Fallback
+                return RelevanceEvaluation(is_relevant=True, confidence=0.5, reasoning="Unable to evaluate")
+                
+        except Exception as e:
+            logger.warning(f"LLM relevance evaluation failed: {e}")
+            return RelevanceEvaluation(is_relevant=True, confidence=0.5, reasoning=f"Evaluation error: {e}")
+
+    def query(self, query: str, top_k: int = 5, auto_feedback: bool = False) -> Tuple[QueryResult, str]:
         """Query the system and return results with selected retriever"""
         selected_name = self.select_retriever()
         selected_retriever = self.retrievers[selected_name]
@@ -405,7 +506,17 @@ class BayesianRAGBandits:
             'timestamp': datetime.now()
         })
         
+        # Auto-feedback if enabled
+        if auto_feedback and result.documents:
+            evaluation = self._llm_evaluate_relevance(query, result.documents)
+            self.provide_feedback(query, evaluation.is_relevant)
+            logger.info(f"Auto-feedback: {evaluation.is_relevant} (confidence: {evaluation.confidence:.2f}) - {evaluation.reasoning}")
+        
         return result, selected_name
+    
+    def get_llm_feedback(self, query: str, documents: List[str]) -> RelevanceEvaluation:
+        """Get LLM evaluation without automatically applying feedback"""
+        return self._llm_evaluate_relevance(query, documents)
     
     def provide_feedback(self, query: str, is_relevant: bool):
         """Provide feedback for the last query"""
@@ -542,21 +653,26 @@ def run_demo():
     ]
     
     print(f"\n🔍 Testing {len(queries)} queries with Thompson Sampling...")
+    print("🤖 First 3 queries with LLM auto-feedback, last 2 with simulated feedback\n")
     
     for i, query in enumerate(queries):
         print(f"\nQuery {i+1}: '{query}'")
         
+        # Use auto-feedback for first 3 queries, manual for last 2
+        use_auto_feedback = i < 3
+        
         # Query system
-        result, selected = rag_bandits.query(query, top_k=2)
+        result, selected = rag_bandits.query(query, top_k=2, auto_feedback=use_auto_feedback)
         print(f"🤖 Selected: {selected}")
         print(f"📋 Results:")
         for j, (doc, score) in enumerate(zip(result.documents, result.scores)):
             print(f"  {j+1}. {doc[:60]}... (score: {score:.3f})")
         
-        # Simulate feedback (80% positive for demo)
-        is_relevant = np.random.random() < 0.8
-        rag_bandits.provide_feedback(query, is_relevant)
-        print(f"📝 Feedback: {'👍' if is_relevant else '👎'}")
+        if not use_auto_feedback:
+            # Simulate manual feedback for last 2 queries
+            is_relevant = np.random.random() < 0.8
+            rag_bandits.provide_feedback(query, is_relevant)
+            print(f"📝 Manual Feedback: {'👍' if is_relevant else '👎'}")
     
     # Show final statistics
     print(f"\n📊 Final Statistics:")
