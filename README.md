@@ -103,19 +103,21 @@ This runs a comprehensive demo showing:
    - Not relevant: β += 1 (failure)
 6. **Adaptation**: System learns optimal retriever selection patterns
 
-### Foundation
+### Mathematical Foundation
 
 **Thompson Sampling with Beta-Bernoulli Conjugate Priors**
 
 For retriever $i$ with $\alpha_i$ successes and $\beta_i$ failures:
 
 **Posterior Distribution:**
-
-$$P(\theta_i | \text{data}) = \text{Beta}(\alpha_i, \beta_i)$$
+```math
+P(\theta_i | \text{data}) = \text{Beta}(\alpha_i, \beta_i)
+```
 
 **Selection Probability:**
-
-$$\text{Select retriever } i = \underset{j}{\arg\max} \tilde{\theta}_j$$
+```math
+\text{Select retriever } i = \arg\max_j \tilde{\theta}_j
+```
 where $\tilde{\theta}_j \sim \text{Beta}(\alpha_j, \beta_j)$
 
 **Bayesian Updates:**
@@ -123,14 +125,14 @@ where $\tilde{\theta}_j \sim \text{Beta}(\alpha_j, \beta_j)$
 - Failure: $\beta_i \leftarrow \beta_i + 1$
 
 **Expected Reward:**
-
-$$E[\theta_i] = \frac{\alpha_i}{\alpha_i + \beta_i}$$
+```math
+E[\theta_i] = \frac{\alpha_i}{\alpha_i + \beta_i}
+```
 
 **95% Confidence Interval:**
-
-$$\text{CI}_{95\%} = [Q(0.025), Q(0.975)]$$
-
-where $Q$ is the Beta quantile function with parameters $\alpha_i, \beta_i$
+```math
+\text{CI}_{95\%} = \text{Beta}^{-1}(0.025, \alpha_i, \beta_i), \text{Beta}^{-1}(0.975, \alpha_i, \beta_i)
+```
 
 ## 📊 Advanced Features
 
@@ -139,17 +141,20 @@ where $Q$ is the Beta quantile function with parameters $\alpha_i, \beta_i$
 **Basic Retrievers:**
 - **BM25**: Fast lexical matching with TF-IDF scoring
 - **Dense**: OpenAI text-embedding-3-large for semantic similarity using cosine similarity:
-
-$$\text{sim}(q, d) = \frac{\mathbf{e}_q \cdot \mathbf{e}_d}{\|\mathbf{e}_q\| \|\mathbf{e}_d\|}$$
+  ```math
+  \text{sim}(q, d) = \frac{\mathbf{e}_q \cdot \mathbf{e}_d}{||\mathbf{e}_q|| \cdot ||\mathbf{e}_d||}
+  ```
 - **GraphRAG**: PageRank + relevance scoring using networkx
 
 **Advanced Retrievers:**
 - **Hybrid**: Combines BM25 + Dense with weighted scores:
-
-$$\text{score}_{\text{hybrid}} = w_{\text{bm25}} \cdot \text{score}_{\text{bm25}} + w_{\text{dense}} \cdot \text{score}_{\text{dense}}$$
+  ```math
+  \text{score}_{\text{hybrid}} = w_{\text{bm25}} \cdot \text{score}_{\text{bm25}} + w_{\text{dense}} \cdot \text{score}_{\text{dense}}
+  ```
 - **Ensemble**: Reciprocal Rank Fusion across multiple retrievers:
-
-$$\text{RRF}(d) = \sum_{r \in R} \frac{1}{k + \text{rank}_r(d)}$$
+  ```math
+  \text{RRF}(d) = \sum_{r \in R} \frac{1}{k + \text{rank}_r(d)}
+  ```
   where $k=60$ and $R$ is the set of retrievers
 - **MultiQuery**: GPT-4o generates query variations for improved recall
 
@@ -333,8 +338,9 @@ Production scenarios: API endpoints, batch processing, async feedback
 - **Fast Convergence**: Identifies best retriever within 5-10 queries  
 - **Intelligent Selection**: Hybrid retriever achieving 85%+ selection rate
 - **Low Regret**: Cumulative regret grows sub-linearly:
-
-$$R_T = \sum_{t=1}^T (\theta^* - \theta_{i_t})$$
+  ```math
+  R_T = \sum_{t=1}^T (\theta^* - \theta_{i_t})
+  ```
   where $\theta^*$ is the optimal reward and $\theta_{i_t}$ is the selected retriever's reward at time $t$
 - **Production Ready**: Handles API, batch, and async scenarios flawlessly
 - **Cost Efficient**: ~$0.01 per query for full OpenAI integration
