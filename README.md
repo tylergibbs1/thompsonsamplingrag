@@ -63,7 +63,8 @@ print(f"LLM Assessment: {evaluation.is_relevant} (confidence: {evaluation.confid
 ### Demo
 
 ```bash
-python src/bayesian_rag_system.py
+python main.py                      # interactive demo with a Rich terminal UI
+python src/bayesian_rag_system.py   # plain demo
 ```
 
 This runs a comprehensive demo showing:
@@ -464,15 +465,15 @@ graph LR
 ### Development Setup
 
 ```bash
-# Install development dependencies
-pip install -e .
+# Install dependencies and dev tools
+pip install -r requirements.txt
 pip install pytest black flake8
 
 # Run tests
-pytest tests/
+pytest test/
 
 # Format code
-black *.py
+black src test main.py
 ```
 
 ## 📚 References
@@ -486,10 +487,6 @@ Apache 2.0 License - see [LICENSE](LICENSE) for details
 
 ## 🛟 Support
 
-- **Issues**: GitHub issues for bugs and feature requests
-- **Discussions**: GitHub discussions for questions
+- **Issues**: GitHub issues for bugs, feature requests, and questions
 - **Documentation**: See docstrings and type hints in code
-
----
-
-Built with ❤️ for production RAG systems that learn from user feedback! 
+ 
